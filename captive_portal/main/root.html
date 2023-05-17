@@ -1,0 +1,91 @@
+<!-- <!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body {
+        background-color: #ffffff;
+      }
+    </style>
+    <title>ESP Captive Portal</title>
+  </head>
+  <body>
+    <h1>ESP Captive Portal</h1>
+    <p>Hello World, this is ESP32!</p>
+  </body>
+</html> -->
+
+
+
+<!DOCTYPE html>
+<html>
+<style>
+  .box {
+    text-align: center;
+  }
+
+  .data {
+    /* border: 1px solid rgb(0, 110, 255); */
+    height: 160px;
+    width: 350px;
+    margin: auto;
+    margin-bottom: 10px;
+    margin-top: 10px;
+    padding-left: 50px;
+  }
+
+  .b {
+    background-color: cornflowerblue;
+    font-size: 20px;
+    height: 30px;
+    width: 100px;
+    margin-top: 10px;
+  }
+
+  .i {
+    font-size: 15px;
+    height: 20px;
+    width: 150px;
+  }
+
+  .p {
+    font-size: 15px;
+    display: inline-block;
+    margin-right: 10px;
+  }
+</style>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+  <title>连接Wifi</title>
+</head>
+
+<body>
+  <form method="post" action="post">
+    <div class="box">
+      <img src="test.jpeg" width="200" height="200">
+      <div class="data">
+        <table>
+          <tr>
+            <th>
+              <p class="p">SSID</p>
+            </th>
+            <th>
+              <input class="i" type="text" name="ssid" />
+            </th>
+          </tr>
+          <tr>
+            <th>
+              <p class="p">PASSWORD</p>
+            </th>
+            <th>
+              <input class="i" type="password" name="pwd" />
+            </th>
+          </tr>
+        </table>
+        <input class="b" type="submit" value="Connect">
+      </div>
+    </div>
+  </form>
+</body>
+
+</html>

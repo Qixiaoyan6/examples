@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "random": "c"
+    },
+    "idf.adapterTargetName": "esp32c3"
+}
