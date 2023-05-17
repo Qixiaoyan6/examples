@@ -7,7 +7,10 @@
 
 ## 如何使用该例程
 
-### Configure the project
+本示例基于esp-idf-v5.0开发，在项目配置和构建之前，请确保使用idf环境与示例环境一致，否则将出现无法编译的情况；
+请确保您选择开发板设置正确' idf.py set-target <chip_name> '
+
+### 配置工程
 
 - 打开项目配置菜单 (`idf.py menuconfig`).
 
