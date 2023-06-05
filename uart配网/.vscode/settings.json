@@ -1,7 +1,0 @@
-{
-    "files.associations": {
-        "z_uart.h": "c",
-        "wt_uart.h": "c"
-    },
-    "idf.adapterTargetName": "esp32c3"
-}
