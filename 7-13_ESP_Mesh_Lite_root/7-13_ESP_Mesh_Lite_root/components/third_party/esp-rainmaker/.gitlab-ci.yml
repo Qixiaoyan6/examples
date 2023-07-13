@@ -1,0 +1,143 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  V: "0"
+  MAKEFLAGS: "-j8 --no-keep-going"
+  APP_BUILD: "all"
+  GIT_SUBMODULE_STRATEGY: recursive
+
+before_script:
+   # add gitlab ssh key
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo -n $GITLAB_KEY > ~/.ssh/id_rsa_base64
+    - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - echo -e "Host gitlab.espressif.cn\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    # Create esp-rainmaker-bins-${CI_JOB_ID}/ dir (to copy binaries into for artifacts)
+    - mkdir -p $CI_PROJECT_DIR/esp-rainmaker-bins-${CI_JOB_ID}
+
+.build_all_examples: &build_all_examples
+- pip install --upgrade idf-component-manager
+- for EXAMPLE in $EXAMPLES; do
+- cd $CI_PROJECT_DIR/examples/$EXAMPLE
+- echo Building $EXAMPLE
+- if [[ "$EXAMPLE" == "homekit_switch" ]]; then
+- cd components
+- echo Cloning esp-homekit-sdk
+- git clone --recursive --branch master --depth 1 https://github.com/espressif/esp-homekit-sdk.git
+- cd ..
+- export HOMEKIT_PATH=$PWD/components/esp-homekit-sdk
+- fi
+- for TARGET in $EXAMPLE_TARGETS; do
+- echo Building for $TARGET
+- idf.py set-target $TARGET
+- idf.py build
+- mkdir -p $CI_PROJECT_DIR/esp-rainmaker-bins-${CI_JOB_ID}/$EXAMPLE/$TARGET/
+- cp $CI_PROJECT_DIR/examples/$EXAMPLE/build/*.bin $CI_PROJECT_DIR/esp-rainmaker-bins-${CI_JOB_ID}/$EXAMPLE/$TARGET/
+- done
+- echo Build Complete for $EXAMPLE
+- done
+# Generating zip file for binaries generated
+- cd $CI_PROJECT_DIR
+- echo Generating zip file for binaries generated
+- tar -zcvf esp-rainmaker-bins-${CI_JOB_ID}.zip esp-rainmaker-bins-${CI_JOB_ID}/
+
+.build_template:
+  stage: build
+  image: espressif/idf:latest
+  tags:
+    - build
+  variables:
+    PEDANTIC_FLAGS: "-Werror -Werror=deprecated-declarations -Wno-error=cpp -Werror=unused-variable -Werror=unused-but-set-variable -Werror=unused-function"
+    EXTRA_CFLAGS: "${PEDANTIC_FLAGS}"
+    EXTRA_CXXFLAGS: "${PEDANTIC_FLAGS}"
+    EXAMPLE_TARGETS: "esp32"
+    EXAMPLES: "switch led_light fan temperature_sensor multi_device gpio homekit_switch"
+  script:
+    - *build_all_examples
+
+build_idf_v4.1:
+  extends: .build_template
+  image: espressif/idf:release-v4.1
+
+build_idf_v4.2:
+  extends: .build_template
+  image: espressif/idf:release-v4.2
+  variables:
+    EXAMPLE_TARGETS: "esp32 esp32s2"
+
+build_idf_v4.3:
+  extends: .build_template
+  image: espressif/idf:release-v4.3
+  variables:
+    EXAMPLE_TARGETS: "esp32 esp32s2 esp32c3"
+
+build_idf_v4.4:
+  extends: .build_template
+  image: espressif/idf:release-v4.4
+  variables:
+    EXAMPLE_TARGETS: "esp32 esp32s2 esp32c3 esp32s3"
+
+build_idf_v5.0:
+  extends: .build_template
+  image: espressif/idf:release-v5.0
+  variables:
+    EXAMPLE_TARGETS: "esp32 esp32s2 esp32c3 esp32s3"
+    EXAMPLES: "switch led_light fan temperature_sensor multi_device gpio"
+
+build_idf_master:
+  extends: .build_template
+  image: espressif/idf:latest
+  variables:
+    EXAMPLE_TARGETS: "esp32 esp32s2 esp32c3 esp32s3"
+    EXAMPLES: "switch led_light fan temperature_sensor multi_device gpio"
+
+build_docs:
+    stage: build
+    image: $CI_DOCKER_REGISTRY/esp32-ci-env
+    tags:
+      - build
+    artifacts:
+      paths:
+        - $CI_PROJECT_DIR/esp-rainmaker-docs-${CI_JOB_ID}.zip
+    script:
+      # Building sphinx docs
+      - echo Building sphinx docs
+      - cd docs
+      # unset IDF_PATH
+      - echo Unset IDF_PATH
+      - unset IDF_PATH
+      # Run requirements.txt
+      - echo Run requirements.txt
+      - python3 -m pip install -r requirements.txt
+      # Run make html
+      - echo Run make html
+      - make html
+      - cd $CI_PROJECT_DIR
+      - echo Generating tar files
+      - mkdir -p esp-rainmaker-docs-${CI_JOB_ID}/html
+      - cp -rf $CI_PROJECT_DIR/docs/_build/html/ esp-rainmaker-docs-${CI_JOB_ID}/html/
+      - tar -zcvf esp-rainmaker-docs-${CI_JOB_ID}.zip esp-rainmaker-docs-${CI_JOB_ID}
+
+push_master_to_github:
+  stage: deploy
+  image: espressif/idf:latest
+  tags:
+    - build
+  when: on_success
+  dependencies: []
+  only:
+    - master
+  script:
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    - echo -n $GH_PUSH_KEY > ~/.ssh/id_rsa_base64
+    - base64 --decode --ignore-garbage ~/.ssh/id_rsa_base64 > ~/.ssh/id_rsa
+    - chmod 600 ~/.ssh/id_rsa
+    - echo -e "Host github.com\n\tStrictHostKeyChecking no\n" >> ~/.ssh/config
+    - git remote remove github &>/dev/null || true
+    - git remote add github git@github.com:espressif/esp-rainmaker.git
+    - git push github "${CI_COMMIT_SHA}:refs/heads/${CI_COMMIT_REF_NAME}"

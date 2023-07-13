@@ -1,0 +1,3 @@
+manifest_hash: 108d3db8426a74ece9fc76eea9aaf022807dcdb45626c849b5fde591dfd0289b
+target: esp32c3
+version: 1.0.0
